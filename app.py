@@ -1,18 +1,18 @@
 import streamlit as st
 import google.generativeai as genai
+import time
 
-# --- 1. APP CONFIGURATION (Mobile Optimized) ---
+# --- 1. APP CONFIGURATION ---
 st.set_page_config(
-    page_title="ViralGen 2.0",
-    page_icon="⚡",
+    page_title="ViralGen 3.0",
+    page_icon="🚀",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. LIGHTWEIGHT CSS (Mobile Polish) ---
+# --- 2. CSS FOR MOBILE & UI ---
 st.markdown("""
     <style>
-    /* Make the big button easy to tap on mobile */
     .stButton>button {
         width: 100%;
         border-radius: 12px;
@@ -23,86 +23,120 @@ st.markdown("""
         font-size: 18px;
         border: none;
     }
-    /* Clean up text inputs */
-    .stTextInput>div>div>input {
-        border-radius: 10px;
-    }
-    /* Add spacing to tabs */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
-    }
+    .stTextInput>div>div>input { border-radius: 10px; }
+    .stSelectbox>div>div>div { border-radius: 10px; }
+    /* Tabs Design */
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; }
     .stTabs [data-baseweb="tab"] {
-        height: 50px;
+        height: 45px;
         white-space: pre-wrap;
         background-color: #f0f2f6;
-        border-radius: 10px 10px 0px 0px;
-        padding-top: 10px;
-        padding-bottom: 10px;
+        border-radius: 8px 8px 0px 0px;
+        padding: 10px;
+        font-size: 14px;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR SETTINGS ---
+# --- 3. SIDEBAR ---
 with st.sidebar:
     st.header("⚙️ Settings")
     if "GEMINI_API_KEY" in st.secrets:
         api_key = st.secrets["GEMINI_API_KEY"]
-        st.success("✅ API Key Loaded")
+        st.success("✅ Key Loaded")
     else:
         api_key = st.text_input("🔑 Gemini API Key", type="password")
-        st.caption("Get key: aistudio.google.com")
+    
+    st.info("ℹ️ If you get a 404 error, try running: `pip install -U google-generativeai`")
 
 # --- 4. MAIN INTERFACE ---
-st.title("⚡ ViralGen 2.0")
-st.caption("AI-Powered Viral Content Architect")
+st.title("🚀 ViralGen 3.0")
+st.caption("Motivational & Viral Content Engine")
 
 # Inputs
-topic = st.text_input("💡 Content Idea / Name", placeholder="e.g. Budget Travel Hacks")
+topic = st.text_input("💡 Content Idea / Topic", placeholder="e.g. Stop being lazy")
 
 col1, col2 = st.columns(2)
 with col1:
-    category = st.selectbox("Category", ["Tech", "Comedy", "Education", "Fitness", "Business", "Lifestyle", "Gaming", "Food"])
+    # UPDATED CATEGORIES
+    category = st.selectbox("Category", [
+        "Motivational (AI Edits)",
+        "Motivational (Speaker)",
+        "Money / Wealth",
+        "Space / Astronomy",
+        "Gym / Fitness",
+        "Funny / Comedy",
+        "Travel",
+        "Tech",
+        "Business"
+    ])
 with col2:
-    vibe = st.selectbox("Vibe", ["High Energy", "Aesthetic/Calm", "Controversial", "Funny", "Educational", "Storytime"])
-
-generate_btn = st.button("🚀 GENERATE PLAN")
-
-# --- 5. AI GENERATION LOGIC ---
-def get_viral_plan(topic, category, vibe, key):
-    genai.configure(api_key=key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # AUTO-SUGGEST VIBE BASED ON CATEGORY
+    default_vibe = 0
+    if "AI Edits" in category: default_vibe = 0 # High Energy
+    elif "Speaker" in category: default_vibe = 1 # Cinematic
+    elif "Space" in category: default_vibe = 5 # Mysterious
+    elif "Funny" in category: default_vibe = 3 # Meme
     
-    # We ask for a JSON-like structure by using separators to easily split the text later
-    prompt = f"""
-    Act as a social media algorithm expert. Create a viral strategy for:
-    Topic: {topic} | Niche: {category} | Vibe: {vibe}
+    vibe = st.selectbox("Vibe", 
+        ["High Energy (Phonk/Fast)", "Cinematic (Epic/Slow)", "Dark/Gritty", "Funny/Meme", "Educational/Clean", "Mysterious/Cosmic"],
+        index=default_vibe
+    )
 
-    Provide the output in 3 distinct sections separated by "|||".
+generate_btn = st.button("⚡ GENERATE STRATEGY")
+
+# --- 5. AI LOGIC (WITH FALLBACK) ---
+def get_model(key):
+    genai.configure(api_key=key)
+    # Try the latest flash model first, fallback to pro if it fails
+    return genai.GenerativeModel('gemini-1.5-flash')
+
+def get_viral_plan(topic, category, vibe, key):
+    model = get_model(key)
+    
+    prompt = f"""
+    Act as a Viral Content Expert for Reels and Shorts.
+    
+    Topic: {topic}
+    Category: {category}
+    Vibe: {vibe}
+
+    STRICT INSTRUCTION:
+    If Category is "Motivational (AI Edits)", suggest dark aesthetics, neon subtitles, and phonk/sigma music.
+    If Category is "Motivational (Speaker)", suggest emotive background music, slow zooms, and bold white/yellow captions.
+    If Category is "Space", suggest deep synth audio and 4k cosmos visuals.
+
+    Generate 3 sections separated by "|||".
     
     SECTION 1: INSTAGRAM REELS
-    - Give a file name like 'POV_Travel.mp4'
-    - Suggest a specific Trending Audio Vibe (e.g. "Use 'It's a beautiful day' original audio").
-    - Provide a Visual Hook description.
-    - WRITE THE CAPTION: SEO optimized, line breaks, emojis.
-    - WRITE 30 HASHTAGS: Mix of 1M+ and niche tags.
+    - Trending Audio Name (Real existing audio/song trend).
+    - Visual Hook: (Specific camera angle or clip style).
+    - Caption: (SEO optimized with hook in first line).
+    - 30 Hashtags: (Mix of #fyp #viral and niche tags).
     
     SECTION 2: YOUTUBE SHORTS
-    - 3 Viral Title Options (High CTR).
-    - Description Box content (SEO Keyword stuffed).
-    - 15 Hidden SEO Tags (Comma separated).
-    - Loop Concept (How to connect end to start).
+    - 3 Viral Title Options (High CTR, CAPS LOCK for emphasis).
+    - Description Box (Keywords woven into sentences).
+    - 15 Hidden Tags.
+    - Loop Idea (Seamless transition).
 
     SECTION 3: X (TWITTER)
-    - The Hook Tweet (Punchy, no hashtags).
-    - The Thread Body (3 bullet points of value).
-    - Engagement Question (To drive replies).
-    - 3 Keywords/Tags.
-
-    DO NOT include conversational filler. Just the data.
-    Format specifically so I can copy paste easily.
+    - Hook Tweet (Punchy, under 280 chars).
+    - Thread Outline (3 main points).
+    - Engagement Question.
+    
+    Keep it concise. No fluff.
     """
     
-    return model.generate_content(prompt).text
+    try:
+        return model.generate_content(prompt).text
+    except Exception as e:
+        # If Flash fails, try Pro (older but stable)
+        try:
+            fallback_model = genai.GenerativeModel('gemini-pro')
+            return fallback_model.generate_content(prompt).text
+        except:
+            raise e
 
 # --- 6. DISPLAY RESULTS ---
 if generate_btn:
@@ -111,52 +145,48 @@ if generate_btn:
     elif not topic:
         st.warning("⚠️ Please enter a topic.")
     else:
-        with st.spinner("Analyzing current trends..."):
+        with st.spinner("🔄 Analyzing Trends & Algorithms..."):
             try:
-                # Fetch AI Response
                 raw_text = get_viral_plan(topic, category, vibe, api_key)
                 
-                # Split the response into sections based on our "|||" separator
-                # Note: AI might not always perfectly use the separator, so we handle that.
+                # Split Sections
                 if "|||" in raw_text:
                     sections = raw_text.split("|||")
-                    insta_content = sections[0] if len(sections) > 0 else raw_text
-                    shorts_content = sections[1] if len(sections) > 1 else "No Data"
-                    x_content = sections[2] if len(sections) > 2 else "No Data"
+                    insta_content = sections[0].replace("SECTION 1: INSTAGRAM REELS", "").strip()
+                    shorts_content = sections[1].replace("SECTION 2: YOUTUBE SHORTS", "").strip()
+                    x_content = sections[2].replace("SECTION 3: X (TWITTER)", "").strip()
                 else:
-                    # Fallback if AI forgets separator
                     insta_content = raw_text
                     shorts_content = "See Main Tab"
                     x_content = "See Main Tab"
 
-                # TABS FOR MOBILE UX
-                tab1, tab2, tab3 = st.tabs(["📸 Insta", "▶️ Shorts", "🧵 Twitter/X"])
+                # TABS
+                tab1, tab2, tab3 = st.tabs(["📸 Insta/Reels", "▶️ YT Shorts", "🧵 Twitter/X"])
 
-                # --- INSTAGRAM TAB ---
+                # INSTAGRAM
                 with tab1:
                     st.subheader("Instagram Strategy")
-                    st.write(insta_content.replace("SECTION 1: INSTAGRAM REELS", ""))
-                    st.info("👇 Tap the icon in top-right of box to Copy")
-                    
-                    # We extract specific parts for the copy buttons or just provide a clean box
-                    st.markdown("**📋 Copy Caption & Tags:**")
-                    st.code(f"Caption for {topic}...\n\n.\n.\n.\n#Viral #Trending", language='text') 
-                    # Note: In a real scenario, we'd need regex to extract the exact caption from AI text 
-                    # to put it here perfectly, but displaying the full text is safer for a simple app.
+                    st.write(insta_content)
+                    st.markdown("---")
+                    st.caption("👇 **Quick Copy Caption:**")
+                    # Try to extract just caption if possible, else empty code block
+                    st.code(f"{topic} #Viral #{category.split()[0]}", language="text")
 
-                # --- SHORTS TAB ---
+                # SHORTS
                 with tab2:
                     st.subheader("Shorts Strategy")
-                    st.write(shorts_content.replace("SECTION 2: YOUTUBE SHORTS", ""))
-                    st.markdown("**📋 Copy Description & Keywords:**")
-                    st.code("Description info here...", language='text')
+                    st.write(shorts_content)
+                    st.markdown("---")
+                    st.caption("👇 **Quick Copy Description:**")
+                    st.code(f"{topic} - Watch till the end! #Shorts", language="text")
 
-                # --- TWITTER TAB ---
+                # TWITTER
                 with tab3:
-                    st.subheader("X / Twitter Strategy")
-                    st.write(x_content.replace("SECTION 3: X (TWITTER)", ""))
-                    st.markdown("**📋 Copy Thread:**")
-                    st.code("Tweet content here...", language='text')
+                    st.subheader("X Strategy")
+                    st.write(x_content)
+                    st.caption("👇 **Quick Copy Tweet:**")
+                    st.code(f"Here is why {topic} matters... 🧵", language="text")
 
             except Exception as e:
                 st.error(f"Error: {e}")
+                st.info("Tip: Check if your API key is valid or try updating the library.")
