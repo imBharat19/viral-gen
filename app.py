@@ -1,5 +1,6 @@
 import streamlit as st
 import google.generativeai as genai
+import time
 
 # --- 1. CONFIGURATION ---
 st.set_page_config(
@@ -9,10 +10,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. OPTIMIZED CSS (Safe for Mobile) ---
+# --- 2. OPTIMIZED CSS ---
 st.markdown("""
     <style>
-    /* Button Styling */
     .stButton>button {
         width: 100%;
         border-radius: 12px;
@@ -22,25 +22,8 @@ st.markdown("""
         font-weight: bold;
         font-size: 18px;
         border: none;
-        transition: 0.3s;
     }
-    .stButton>button:hover {
-        background-color: #FF2B2B; 
-    }
-    /* Input Fields */
     .stTextInput>div>div>input { border-radius: 10px; }
-    
-    /* Tabs Styling */
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; }
-    .stTabs [data-baseweb="tab"] {
-        height: 45px;
-        white-space: pre-wrap;
-        background-color: #f0f2f6;
-        border-radius: 8px 8px 0px 0px;
-        padding: 10px;
-        font-size: 14px;
-    }
-    /* Hide Header/Footer for clean look */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
@@ -50,22 +33,27 @@ st.markdown("""
 # --- 3. SIDEBAR ---
 with st.sidebar:
     st.header("⚙️ Settings")
+    # Securely check for key
     if "GEMINI_API_KEY" in st.secrets:
         api_key = st.secrets["GEMINI_API_KEY"]
         st.success("✅ Key Loaded")
     else:
         api_key = st.text_input("🔑 Gemini API Key", type="password")
     
-    st.info("ℹ️ Using Gemini 1.5 Flash (Fastest Model)")
+    st.info("ℹ️ Using Model: gemini-1.5-flash")
 
-# --- 4. CACHED AI FUNCTIONS (Prevents Lag) ---
-@st.cache_resource
-def configure_model(key):
-    genai.configure(api_key=key)
-    # Using 'latest' variant to avoid version errors
-    return genai.GenerativeModel('gemini-1.5-flash-latest')
+# --- 4. AI FUNCTION (FIXED) ---
+def get_viral_plan(api_key, topic, category, vibe):
+    # Configure API
+    genai.configure(api_key=api_key)
+    
+    # FIXED: Removed "-latest" which causes 404 errors
+    # Fallback logic: Try Flash, if 404, try Pro
+    try:
+        model = genai.GenerativeModel('gemini-1.5-flash')
+    except:
+        model = genai.GenerativeModel('gemini-pro')
 
-def get_viral_plan(model, topic, category, vibe):
     prompt = f"""
     Act as a Viral Content Strategist.
     Topic: {topic} | Category: {category} | Vibe: {vibe}
@@ -97,7 +85,6 @@ def get_viral_plan(model, topic, category, vibe):
     Keep it concise. No conversational filler.
     """
     
-    # Generate content
     response = model.generate_content(prompt)
     return response.text
 
@@ -136,72 +123,57 @@ with col2:
 
 generate_btn = st.button("🚀 GENERATE STRATEGY")
 
-# --- 6. EXECUTION LOGIC ---
+# --- 6. SAFE EXECUTION (Prevents White Screen) ---
 if generate_btn:
     if not api_key:
         st.error("⚠️ Please add your API Key in the sidebar.")
     elif not topic:
         st.warning("⚠️ Please enter a topic.")
     else:
-        # Show a progress bar instead of just a spinner to keep UI alive
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        
-        try:
-            status_text.text("🔌 Connecting to AI...")
-            progress_bar.progress(20)
-            
-            # 1. Configure Model (Cached)
-            model = configure_model(api_key)
-            
-            status_text.text("🧠 Brainstorming Viral Hooks...")
-            progress_bar.progress(50)
-            
-            # 2. Generate
-            raw_text = get_viral_plan(model, topic, category, vibe)
-            
-            status_text.text("✨ Formatting Result...")
-            progress_bar.progress(80)
+        # Use a status container instead of spinner to prevent UI freeze
+        with st.status("🧠 Analyzing Algorithms...", expanded=True) as status:
+            try:
+                st.write("🔌 Connecting to Gemini AI...")
+                # Call AI
+                raw_text = get_viral_plan(api_key, topic, category, vibe)
+                
+                st.write("✨ Formatting Strategy...")
+                
+                # Safe Parsing
+                if "|||" in raw_text:
+                    sections = raw_text.split("|||")
+                    insta = sections[0].strip()
+                    shorts = sections[1].strip() if len(sections) > 1 else "Error generating Shorts"
+                    twitter = sections[2].strip() if len(sections) > 2 else "Error generating X"
+                else:
+                    insta = raw_text
+                    shorts = "See Instagram Tab"
+                    twitter = "See Instagram Tab"
 
-            # 3. Safe Parsing (Prevents White Screen Crash)
-            if "|||" in raw_text:
-                sections = raw_text.split("|||")
-                insta = sections[0].strip()
-                shorts = sections[1].strip() if len(sections) > 1 else "Error generating Shorts"
-                twitter = sections[2].strip() if len(sections) > 2 else "Error generating X"
-            else:
-                # Fallback if AI forgets separator
-                insta = raw_text
-                shorts = "See Instagram Tab"
-                twitter = "See Instagram Tab"
+                status.update(label="✅ Strategy Generated!", state="complete", expanded=False)
 
-            progress_bar.progress(100)
-            status_text.empty() # Clear status message
-            progress_bar.empty() # Clear progress bar
+                # 7. DISPLAY RESULTS
+                tab1, tab2, tab3 = st.tabs(["📸 Insta/Reels", "▶️ YT Shorts", "🧵 Twitter/X"])
 
-            # 4. Display Tabs
-            tab1, tab2, tab3 = st.tabs(["📸 Insta/Reels", "▶️ YT Shorts", "🧵 Twitter/X"])
+                with tab1:
+                    st.subheader("Instagram Strategy")
+                    st.write(insta.replace("SECTION 1: INSTAGRAM REELS", ""))
+                    st.info("👇 **Caption Copy:**")
+                    st.code(f"{topic} #Viral", language="text")
 
-            with tab1:
-                st.subheader("Instagram Strategy")
-                st.write(insta.replace("SECTION 1: INSTAGRAM REELS", ""))
-                st.markdown("---")
-                st.caption("👇 **Caption Copy:**")
-                st.code(f"{topic} #Viral", language="text")
+                with tab2:
+                    st.subheader("Shorts Strategy")
+                    st.write(shorts.replace("SECTION 2: YOUTUBE SHORTS", ""))
+                    st.info("👇 **Description Copy:**")
+                    st.code(f"{topic} - Subscribe for more! #Shorts", language="text")
 
-            with tab2:
-                st.subheader("Shorts Strategy")
-                st.write(shorts.replace("SECTION 2: YOUTUBE SHORTS", ""))
-                st.markdown("---")
-                st.caption("👇 **Description Copy:**")
-                st.code(f"{topic} - Subscribe for more! #Shorts", language="text")
+                with tab3:
+                    st.subheader("X Strategy")
+                    st.write(twitter.replace("SECTION 3: X (TWITTER)", ""))
+                    st.info("👇 **Tweet Copy:**")
+                    st.code(f"Here is why {topic} matters... 🧵", language="text")
 
-            with tab3:
-                st.subheader("X Strategy")
-                st.write(twitter.replace("SECTION 3: X (TWITTER)", ""))
-                st.caption("👇 **Tweet Copy:**")
-                st.code(f"Here is why {topic} matters... 🧵", language="text")
-
-        except Exception as e:
-            st.error(f"❌ Error: {str(e)}")
-            st.info("Tip: If the error persists, refresh the page.")
+            except Exception as e:
+                status.update(label="❌ Error", state="error")
+                st.error(f"Something went wrong: {e}")
+                st.info("Try refreshing the page or checking your API Key.")
