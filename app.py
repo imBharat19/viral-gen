@@ -89,7 +89,7 @@ generate_btn = st.button("⚡ GENERATE STRATEGY")
 def get_model(key):
     genai.configure(api_key=key)
     # Try the latest flash model first, fallback to pro if it fails
-    return genai.GenerativeModel('gemini-1.5-flash')
+    return genai.GenerativeModel('gemini-2.5-flash')
 
 def get_viral_plan(topic, category, vibe, key):
     model = get_model(key)
