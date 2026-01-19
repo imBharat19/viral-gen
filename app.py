@@ -44,7 +44,7 @@ def get_viral_plan(api_key, topic, category, vibe):
     
     # SWITCHED TO 'gemini-pro' (The Safe Choice)
     # This model exists on all library versions, preventing the 404 error.
-    model = genai.GenerativeModel('gemini-pro')
+    model = genai.GenerativeModel('gemini-2.5-flash')
 
     prompt = f"""
     Act as a Viral Content Strategist.
