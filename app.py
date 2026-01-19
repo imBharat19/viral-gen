@@ -3,13 +3,13 @@ import requests
 
 # --- 1. CONFIGURATION ---
 st.set_page_config(
-    page_title="ViralGen",
+    page_title="ViralGen 4.0",
     page_icon="⚡",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. DARK GLASSMORPHISM CSS ---
+# --- 2. DARK GLASSMORPHISM CSS (MOBILE FIX INCLUDED) ---
 st.markdown("""
     <style>
     /* Global Background - Deep Dark Grey */
@@ -48,16 +48,6 @@ st.markdown("""
         box-shadow: 0 6px 25px rgba(255, 75, 75, 0.6);
     }
 
-    /* Output Containers - The "Glass" Cards */
-    .glass-card {
-        background-color: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 15px;
-        padding: 20px;
-        margin-bottom: 20px;
-        backdrop-filter: blur(10px);
-    }
-
     /* Tabs Design */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
@@ -76,9 +66,19 @@ st.markdown("""
         font-weight: bold;
     }
 
+    /* --------- MOBILE FIX FOR COPY BUTTON OVERLAP --------- */
+    /* This forces text to wrap and adds padding so it doesn't hit the button */
+    [data-testid="stCode"] pre {
+        white-space: pre-wrap !important;  /* Force text wrapping */
+        word-break: break-word !important; /* Break long words/hashtags */
+        padding-right: 50px !important;    /* Add space on right for the copy button */
+        background-color: rgba(255, 255, 255, 0.05) !important; /* Ensure glassy background */
+        border-radius: 10px !important;
+    }
+    /* ------------------------------------------------------ */
+
     /* Clean up headers */
-    h1, h2, h3 { color: white; font-family: sans-serif; }
-    .stCode { border-radius: 10px; }
+    h1, h2, h3, caption { color: white !important; font-family: sans-serif; }
     
     /* Hide Streamlit elements */
     #MainMenu {visibility: hidden;}
@@ -101,51 +101,32 @@ with st.sidebar:
     model_name = st.text_input("🤖 Model Name", value="gemini-2.5-flash")
     st.caption("Change this if the model version updates again.")
 
-# --- 4. DIRECT API LOGIC (Using your working model) ---
+# --- 4. DIRECT API LOGIC ---
 def generate_metadata(topic, category, vibe, api_key, model):
-    # Dynamic URL based on your input
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-    
     headers = {'Content-Type': 'application/json'}
     
-    # Prompt focusing ONLY on upload data (No fluff)
     prompt = f"""
     Act as a Viral Social Media Manager. I need strictly formatted METADATA for uploading.
-    
-    Topic: {topic}
-    Niche: {category}
-    Vibe: {vibe}
+    Topic: {topic} | Niche: {category} | Vibe: {vibe}
 
     STRICT INSTRUCTIONS:
     1. Do NOT write advice.
-    2. Do NOT write "Here is your plan".
-    3. Output MUST use the separator "|||" between platforms.
+    2. Output MUST use the separator "|||" between platforms.
+    3. Use "~SEPARATOR~" between fields within a platform.
     
     Structure:
-    
     SECTION 1: INSTAGRAM
-    [Write a Caption. First line is a short visual hook. Use line breaks. Add emojis.]
-    ~SEPARATOR~
-    [Write 30 Hashtags, space separated]
-
+    [Write a Caption with emojis]~SEPARATOR~[Write 30 Hashtags, space separated]
     |||
-
     SECTION 2: YOUTUBE SHORTS
-    [Write 1 High-CTR Title (ALL CAPS)]
-    ~SEPARATOR~
-    [Write Description. Include keywords naturally in 2 sentences.]
-    ~SEPARATOR~
-    [Write 15 Tags, comma separated]
-
+    [Write 1 High-CTR Title (ALL CAPS)]~SEPARATOR~[Write Description with keywords]~SEPARATOR~[Write 15 Tags, comma separated]
     |||
-
     SECTION 3: X (TWITTER)
-    [Write a Thread Starter Tweet. Punchy & short.]
+    [Write a Thread Starter Tweet]
     """
     
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}]
-    }
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
     
     try:
         response = requests.post(url, headers=headers, json=payload)
@@ -195,16 +176,14 @@ if generate:
             if "Error" in raw_text:
                 status.update(label="❌ Failed", state="error")
                 st.error(f"Model Error: {raw_text}")
-                st.info("Try changing the Model Name in the Sidebar if 'gemini-2.5-flash' stops working.")
             else:
                 status.update(label="✅ Data Ready", state="complete", expanded=False)
                 
                 # PARSING LOGIC
                 try:
-                    # Default values
-                    insta_cap, insta_tags = "Error parsing", "Error parsing"
-                    sh_title, sh_desc, sh_tags = "Error parsing", "Error parsing", "Error parsing"
-                    tweet = "Error parsing"
+                    insta_cap, insta_tags = "Error", "Error"
+                    sh_title, sh_desc, sh_tags = "Error", "Error", "Error"
+                    tweet = "Error"
 
                     if "|||" in raw_text:
                         parts = raw_text.split("|||")
@@ -214,46 +193,36 @@ if generate:
                             p1 = parts[0].replace("SECTION 1: INSTAGRAM", "").strip()
                             if "~SEPARATOR~" in p1:
                                 insta_cap, insta_tags = p1.split("~SEPARATOR~")
-                            else:
-                                insta_cap = p1
+                            else: insta_cap = p1
 
                         # Shorts Parse
                         if len(parts) > 1:
                             p2 = parts[1].replace("SECTION 2: YOUTUBE SHORTS", "").strip()
                             if "~SEPARATOR~" in p2:
                                 sh_parts = p2.split("~SEPARATOR~")
-                                sh_title = sh_parts[0].strip()
+                                sh_title = sh_parts[0].strip() if len(sh_parts) > 0 else ""
                                 sh_desc = sh_parts[1].strip() if len(sh_parts) > 1 else ""
                                 sh_tags = sh_parts[2].strip() if len(sh_parts) > 2 else ""
                         
                         # Twitter Parse
-                        if len(parts) > 2:
-                            tweet = parts[2].replace("SECTION 3: X (TWITTER)", "").strip()
+                        if len(parts) > 2: tweet = parts[2].replace("SECTION 3: X (TWITTER)", "").strip()
 
                     # --- TABS UI ---
                     t1, t2, t3 = st.tabs(["📸 Instagram", "▶️ Shorts", "🐦 Twitter/X"])
                     
                     with t1:
-                        st.markdown("### 📸 Ready for Reels")
                         st.caption("Copy Caption")
                         st.code(insta_cap.strip(), language="text")
                         st.caption("Copy Hashtags")
                         st.code(insta_tags.strip(), language="text")
                     
                     with t2:
-                        st.markdown("### ▶️ Ready for Shorts")
-                        st.caption("Title")
-                        st.code(sh_title.strip(), language="text")
-                        st.caption("Description")
-                        st.code(sh_desc.strip(), language="text")
-                        st.caption("Tags")
-                        st.code(sh_tags.strip(), language="text")
+                        st.caption("Title"); st.code(sh_title.strip(), language="text")
+                        st.caption("Description"); st.code(sh_desc.strip(), language="text")
+                        st.caption("Tags"); st.code(sh_tags.strip(), language="text")
                     
                     with t3:
-                        st.markdown("### 🐦 Ready for Post")
-                        st.caption("Tweet Content")
-                        st.code(tweet.strip(), language="text")
+                        st.caption("Tweet Content"); st.code(tweet.strip(), language="text")
 
                 except Exception as e:
                     st.error(f"Parsing Error: {e}")
-                    st.write("Raw Output:", raw_text)
