@@ -1,6 +1,5 @@
 import streamlit as st
 import google.generativeai as genai
-import time
 
 # --- 1. CONFIGURATION ---
 st.set_page_config(
@@ -10,7 +9,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. OPTIMIZED CSS ---
+# --- 2. CSS ---
 st.markdown("""
     <style>
     .stButton>button {
@@ -33,26 +32,19 @@ st.markdown("""
 # --- 3. SIDEBAR ---
 with st.sidebar:
     st.header("⚙️ Settings")
-    # Securely check for key
     if "GEMINI_API_KEY" in st.secrets:
         api_key = st.secrets["GEMINI_API_KEY"]
         st.success("✅ Key Loaded")
     else:
         api_key = st.text_input("🔑 Gemini API Key", type="password")
-    
-    st.info("ℹ️ Using Model: gemini-1.5-flash")
 
-# --- 4. AI FUNCTION (FIXED) ---
+# --- 4. AI FUNCTION (Safe Mode) ---
 def get_viral_plan(api_key, topic, category, vibe):
-    # Configure API
     genai.configure(api_key=api_key)
     
-    # FIXED: Removed "-latest" which causes 404 errors
-    # Fallback logic: Try Flash, if 404, try Pro
-    try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
-    except:
-        model = genai.GenerativeModel('gemini-pro')
+    # SWITCHED TO 'gemini-pro' (The Safe Choice)
+    # This model exists on all library versions, preventing the 404 error.
+    model = genai.GenerativeModel('gemini-pro')
 
     prompt = f"""
     Act as a Viral Content Strategist.
@@ -109,7 +101,6 @@ with col1:
         "Business"
     ])
 with col2:
-    # Auto-select vibe logic
     default_vibe = 0
     if "AI Edits" in category: default_vibe = 0
     elif "Speaker" in category: default_vibe = 1
@@ -123,23 +114,22 @@ with col2:
 
 generate_btn = st.button("🚀 GENERATE STRATEGY")
 
-# --- 6. SAFE EXECUTION (Prevents White Screen) ---
+# --- 6. EXECUTION ---
 if generate_btn:
     if not api_key:
         st.error("⚠️ Please add your API Key in the sidebar.")
     elif not topic:
         st.warning("⚠️ Please enter a topic.")
     else:
-        # Use a status container instead of spinner to prevent UI freeze
+        # Using a simple status container to avoid crashes
         with st.status("🧠 Analyzing Algorithms...", expanded=True) as status:
             try:
-                st.write("🔌 Connecting to Gemini AI...")
-                # Call AI
+                st.write("🔌 Connecting to Gemini Pro...")
+                
                 raw_text = get_viral_plan(api_key, topic, category, vibe)
                 
                 st.write("✨ Formatting Strategy...")
                 
-                # Safe Parsing
                 if "|||" in raw_text:
                     sections = raw_text.split("|||")
                     insta = sections[0].strip()
@@ -152,7 +142,7 @@ if generate_btn:
 
                 status.update(label="✅ Strategy Generated!", state="complete", expanded=False)
 
-                # 7. DISPLAY RESULTS
+                # Tabs
                 tab1, tab2, tab3 = st.tabs(["📸 Insta/Reels", "▶️ YT Shorts", "🧵 Twitter/X"])
 
                 with tab1:
@@ -175,5 +165,5 @@ if generate_btn:
 
             except Exception as e:
                 status.update(label="❌ Error", state="error")
-                st.error(f"Something went wrong: {e}")
-                st.info("Try refreshing the page or checking your API Key.")
+                st.error(f"Error Details: {e}")
+                st.info("Tip: Double check your API key.")
