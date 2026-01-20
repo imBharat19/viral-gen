@@ -3,127 +3,143 @@ import requests
 
 # --- 1. CONFIGURATION ---
 st.set_page_config(
-    page_title="ViralGen 4.0",
-    page_icon="⚡",
+    page_title="ViralGen 5.0",
+    page_icon="🔥",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. DARK GLASSMORPHISM CSS (MOBILE FIX INCLUDED) ---
+# --- 2. ULTRA-MODERN CSS (Mobile Optimized) ---
 st.markdown("""
     <style>
-    /* Global Background - Deep Dark Grey */
+    /* Global Background */
     .stApp {
-        background-color: #0E1117;
-        background-image: radial-gradient(#1c1e26 1px, transparent 1px);
-        background-size: 20px 20px;
+        background-color: #050505;
+        background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 30px 30px;
     }
     
-    /* Inputs (Text & Select) - Glassy Look */
+    /* Inputs */
     .stTextInput>div>div>input, .stSelectbox>div>div>div {
-        background-color: rgba(38, 39, 48, 0.7);
-        color: white;
+        background-color: #1a1a1a;
+        color: #e0e0e0;
         border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
+        border: 1px solid #333;
     }
     
-    /* The Generate Button - Neon Gradient */
+    /* Generate Button - Gradient Pulse */
     .stButton>button {
-        background: linear-gradient(90deg, #FF4B4B, #FF914D);
+        background: linear-gradient(45deg, #FF3131, #FF914D);
         color: white;
         border: none;
         border-radius: 12px;
-        height: 3.5em;
+        height: 3.8em;
         width: 100%;
         font-weight: 800;
         font-size: 18px;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 1.5px;
+        box-shadow: 0 0 20px rgba(255, 49, 49, 0.4);
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(255, 75, 75, 0.3);
     }
     .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 25px rgba(255, 75, 75, 0.6);
+        transform: scale(1.02);
+        box-shadow: 0 0 30px rgba(255, 49, 49, 0.6);
     }
 
-    /* Tabs Design */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background-color: transparent;
-    }
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; background-color: transparent; }
     .stTabs [data-baseweb="tab"] {
-        background-color: rgba(255, 255, 255, 0.05);
+        background-color: #1a1a1a;
         border-radius: 10px;
-        color: #ccc;
-        border: none;
+        color: #888;
+        border: 1px solid #333;
         padding: 10px 20px;
     }
     .stTabs [data-baseweb="tab"][aria-selected="true"] {
-        background-color: #FF4B4B;
-        color: white;
-        font-weight: bold;
+        background-color: #FF3131; color: white; border-color: #FF3131;
     }
 
-    /* --------- MOBILE FIX FOR COPY BUTTON OVERLAP --------- */
-    /* This forces text to wrap and adds padding so it doesn't hit the button */
+    /* --- MOBILE COPY FIX --- */
     [data-testid="stCode"] pre {
-        white-space: pre-wrap !important;  /* Force text wrapping */
-        word-break: break-word !important; /* Break long words/hashtags */
-        padding-right: 50px !important;    /* Add space on right for the copy button */
-        background-color: rgba(255, 255, 255, 0.05) !important; /* Ensure glassy background */
-        border-radius: 10px !important;
+        white-space: pre-wrap !important;
+        word-break: break-word !important;
+        padding-right: 50px !important;
+        background-color: #111 !important;
+        border: 1px solid #333;
     }
-    /* ------------------------------------------------------ */
-
-    /* Clean up headers */
-    h1, h2, h3, caption { color: white !important; font-family: sans-serif; }
     
-    /* Hide Streamlit elements */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    /* Typography */
+    h1 { 
+        text-align: center; 
+        background: -webkit-linear-gradient(0deg, #FF3131, #FF914D);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 3.5em;
+        font-weight: 900;
+        margin-bottom: -10px;
+    }
+    p { color: #888; text-align: center; }
+    h3, caption { color: #ccc !important; font-family: sans-serif; }
+    
+    #MainMenu, footer, header {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR & SETTINGS ---
+# --- 3. SIDEBAR ---
 with st.sidebar:
-    st.header("⚙️ Configuration")
+    st.header("⚙️ Engine Settings")
     if "GEMINI_API_KEY" in st.secrets:
         api_key = st.secrets["GEMINI_API_KEY"]
-        st.success("✅ API Key Loaded")
+        st.success("✅ Neural Engine Active")
     else:
         api_key = st.text_input("🔑 Enter Gemini API Key", type="password")
     
     st.markdown("---")
-    # MODEL SELECTOR - defaulting to the one that works for you
-    model_name = st.text_input("🤖 Model Name", value="gemini-2.5-flash")
-    st.caption("Change this if the model version updates again.")
+    model_name = st.text_input("🤖 Model", value="gemini-2.5-flash")
 
-# --- 4. DIRECT API LOGIC ---
+# --- 4. ALGORITHM-HACKING LOGIC ---
 def generate_metadata(topic, category, vibe, api_key, model):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
     headers = {'Content-Type': 'application/json'}
     
+    # --- THE SEO & VIRAL PROMPT ---
     prompt = f"""
-    Act as a Viral Social Media Manager. I need strictly formatted METADATA for uploading.
-    Topic: {topic} | Niche: {category} | Vibe: {vibe}
-
-    STRICT INSTRUCTIONS:
-    1. Do NOT write advice.
-    2. Output MUST use the separator "|||" between platforms.
-    3. Use "~SEPARATOR~" between fields within a platform.
+    Act as a Senior SEO Strategist & Viral Content Expert (Specializing in 2026 Algorithms).
     
-    Structure:
+    Target: {topic}
+    Niche: {category}
+    Vibe: {vibe}
+
+    GOAL: Maximum Reach, High CTR, and Search Ranking.
+    
+    STRICT RULES:
+    1. **NO AI WORDS:** Do not use 'AI', 'Phonk', 'ChatGPT', 'Robot', or 'Generated'. Keep it 100% Organic.
+    2. **SEO OPTIMIZATION:** Place high-volume keywords at the START of titles and descriptions.
+    3. **VIRAL PSYCHOLOGY:** Use curiosity gaps and strong hooks.
+    4. **FORMAT:** Use specific separator "~SEPARATOR~".
+
+    OUTPUT STRUCTURE:
+
     SECTION 1: INSTAGRAM
-    [Write a Caption with emojis]~SEPARATOR~[Write 30 Hashtags, space separated]
+    [Write a Caption. First sentence must be a 'Stop-Scroll' hook. Use line breaks for readability.]
+    ~SEPARATOR~
+    [Write 30 Trending Hashtags. Mix of High-Volume (1M+) and Specific Niche tags. Space separated.]
+
     |||
+
     SECTION 2: YOUTUBE SHORTS
-    [Write 1 High-CTR Title (ALL CAPS)]~SEPARATOR~[Write Description with keywords]~SEPARATOR~[Write 15 Tags, comma separated]
+    [Write 1 VIRAL TITLE. ALL CAPS. Under 50 chars. Must trigger curiosity.]
+    ~SEPARATOR~
+    [Write Description. First 2 lines must contain main SEO keywords naturally. Add Call-to-Action.]
+    ~SEPARATOR~
+    [Write 15 High-Traffic Tags. Comma separated. Focus on search terms users actually type.]
+
     |||
+
     SECTION 3: X (TWITTER)
-    [Write a Thread Starter Tweet]
+    [Write a Thread Starter. Short, Punchy, Controversial or High Value. No hashtags in the hook.]
     """
     
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
@@ -137,50 +153,55 @@ def generate_metadata(topic, category, vibe, api_key, model):
     except Exception as e:
         return f"Connection Error: {e}"
 
-# --- 5. MAIN INTERFACE ---
-st.markdown("<h1 style='text-align: center; margin-bottom: 0px;'>⚡ ViralGen 4.0</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #888; margin-bottom: 40px;'>Metadata Generator for Creators</p>", unsafe_allow_html=True)
+# --- 5. UI LAYOUT ---
+st.markdown("<h1>ViralGen 5.0</h1>", unsafe_allow_html=True)
+st.markdown("<p>Algorithm-Optimized Metadata Engine</p><br>", unsafe_allow_html=True)
 
-# Input Container
 with st.container():
-    topic = st.text_input("📝 Content Idea", placeholder="e.g. 5 Signs you are mentally strong")
+    topic = st.text_input("🔥 What topic is trending?", placeholder="e.g. Passive Income 2026")
     
     c1, c2 = st.columns(2)
     with c1:
         category = st.selectbox("Category", [
-            "Motivational (AI Edits)", "Motivational (Speaker)", 
-            "Money / Wealth", "Gym / Fitness", 
-            "Space / Sci-Fi", "Travel", "Tech", "Comedy"
+            "Motivational (Cinematic/Visual)", 
+            "Motivational (Speaker)", 
+            "Money / Wealth / Crypto", 
+            "Gym / Aesthetics", 
+            "Space / Mystery", 
+            "Travel / Luxury", 
+            "Tech / Future", 
+            "Comedy / Relatable"
         ])
     with c2:
         vibe = st.selectbox("Vibe", [
-            "High Energy (Phonk)", "Dark / Gritty", 
-            "Cinematic / Emotional", "Funny / Meme", 
-            "Educational / Clean"
+            "High Intensity / Fast", 
+            "Dark / Moody", 
+            "Emotional / Deep", 
+            "Controversial / Bold", 
+            "Educational / Sharp"
         ])
 
-    st.write("") # Spacer
-    generate = st.button("✨ GENERATE UPLOAD DATA")
+    st.write("")
+    generate = st.button("🚀 HACK THE ALGORITHM")
 
-# --- 6. OUTPUT DISPLAY ---
+# --- 6. OUTPUT PROCESSING ---
 if generate:
     if not api_key:
         st.error("⚠️ API Key missing")
     elif not topic:
         st.warning("⚠️ Enter a topic")
     else:
-        # Status Bar
-        with st.status("🚀 Connecting to AI Model...", expanded=True) as status:
+        with st.status("🧠 Analyzing Search Trends...", expanded=True) as status:
             raw_text = generate_metadata(topic, category, vibe, api_key, model_name)
             
             if "Error" in raw_text:
                 status.update(label="❌ Failed", state="error")
-                st.error(f"Model Error: {raw_text}")
+                st.error(f"Error: {raw_text}")
             else:
-                status.update(label="✅ Data Ready", state="complete", expanded=False)
+                status.update(label="✅ Optimized Data Ready", state="complete", expanded=False)
                 
-                # PARSING LOGIC
                 try:
+                    # Initialize vars
                     insta_cap, insta_tags = "Error", "Error"
                     sh_title, sh_desc, sh_tags = "Error", "Error", "Error"
                     tweet = "Error"
@@ -188,14 +209,14 @@ if generate:
                     if "|||" in raw_text:
                         parts = raw_text.split("|||")
                         
-                        # Insta Parse
+                        # INSTAGRAM
                         if len(parts) > 0:
                             p1 = parts[0].replace("SECTION 1: INSTAGRAM", "").strip()
                             if "~SEPARATOR~" in p1:
                                 insta_cap, insta_tags = p1.split("~SEPARATOR~")
                             else: insta_cap = p1
 
-                        # Shorts Parse
+                        # SHORTS
                         if len(parts) > 1:
                             p2 = parts[1].replace("SECTION 2: YOUTUBE SHORTS", "").strip()
                             if "~SEPARATOR~" in p2:
@@ -204,25 +225,29 @@ if generate:
                                 sh_desc = sh_parts[1].strip() if len(sh_parts) > 1 else ""
                                 sh_tags = sh_parts[2].strip() if len(sh_parts) > 2 else ""
                         
-                        # Twitter Parse
+                        # TWITTER
                         if len(parts) > 2: tweet = parts[2].replace("SECTION 3: X (TWITTER)", "").strip()
 
-                    # --- TABS UI ---
-                    t1, t2, t3 = st.tabs(["📸 Instagram", "▶️ Shorts", "🐦 Twitter/X"])
+                    # DISPLAY TABS
+                    t1, t2, t3 = st.tabs(["📸 Insta", "▶️ Shorts SEO", "🐦 X Thread"])
                     
                     with t1:
-                        st.caption("Copy Caption")
+                        st.caption("🔥 Viral Caption")
                         st.code(insta_cap.strip(), language="text")
-                        st.caption("Copy Hashtags")
+                        st.caption("📈 Trending Tags")
                         st.code(insta_tags.strip(), language="text")
                     
                     with t2:
-                        st.caption("Title"); st.code(sh_title.strip(), language="text")
-                        st.caption("Description"); st.code(sh_desc.strip(), language="text")
-                        st.caption("Tags"); st.code(sh_tags.strip(), language="text")
+                        st.caption("🏆 High-CTR Title")
+                        st.code(sh_title.strip(), language="text")
+                        st.caption("🔍 SEO Description")
+                        st.code(sh_desc.strip(), language="text")
+                        st.caption("🏷️ Search Tags")
+                        st.code(sh_tags.strip(), language="text")
                     
                     with t3:
-                        st.caption("Tweet Content"); st.code(tweet.strip(), language="text")
+                        st.caption("💬 Engagement Hook")
+                        st.code(tweet.strip(), language="text")
 
                 except Exception as e:
                     st.error(f"Parsing Error: {e}")
