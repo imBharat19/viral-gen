@@ -80,7 +80,7 @@ st.markdown("""
         font-weight: 900;
         margin-bottom: -10px;
     }
-    p { color: #888; text-align: center; }
+    p { color: #000; text-align: center; }
     h3, caption { color: #ccc !important; font-family: sans-serif; }
     
     #MainMenu, footer, header {visibility: hidden;}
